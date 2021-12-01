@@ -83,25 +83,25 @@ class Player:
 
 
 class Bullet():
-    def __init__(self, ship_vel, ship_pos):
+    def __init__(self, ship_angle, ship_pos):
 
-        self.bullet_vel = 1.3
+        self.bullet_speed = 5
 
-        self.bullet_pos = ship_pos
+        self.x = ship_pos[0]
+        self.y = ship_pos[1]
 
-        # Velocity of ship when bullet is fired
-        self.bullet_vel = [ship_vel[0], ship_vel[1]]
+        self.angle = ship_angle
 
         self.image = pygame.image.load('D:\Meteors\star.png')
 
     def update(self):
 
-        self.bullet_pos[0] += self.bullet_vel[0] * self.bullet_vel
-        self.bullet_pos[1] += self.bullet_vel[1] * self.bullet_vel
+        self.x += 5 * math.cos(self.angle * math.pi / 180)
+        self.y += 5 * math.sin(self.angle * math.pi / 180)
 
     def draw(self, screen):
         '''Draws the ship onto the screen'''
-        screen.blit(self.image, (self.bullet_pos[0], self.bullet_pos[1]))
+        screen.blit(self.image, (self.x, self.y))
 
 def gameLoop():
 
@@ -113,6 +113,8 @@ def gameLoop():
     pygame.display.set_caption("Meteors")
     
     player = Player('D:\Meteors\star.png', (100, 100), 0, (0, 0), False, 20)
+
+    bullets = []
 
     clock = pygame.time.Clock()
 
@@ -134,7 +136,7 @@ def gameLoop():
                 elif event.key == pygame.K_UP:
                     player.thrust = True
                 elif event.key == pygame.K_SPACE:
-                    print("pew pew")
+                    bullets.append(Bullet(player.vel, player.pos))
                 
             #Reset rotation velocity / stop thrust when key goes up
             elif event.type == pygame.KEYUP:
@@ -149,6 +151,10 @@ def gameLoop():
         screen.fill(settings.BACKGROUND)
 
         player.update()
+
+        for bullet in bullets:
+            bullet.update()
+            bullet.draw(screen)
 
         player.draw(screen)
 
