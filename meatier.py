@@ -34,13 +34,14 @@ def rotate_center(image, angle):
 
 class Player:
     '''This class represents the player'''
-    def __init__(self, image, position, angle, velocity, thrust, radius):
+    def __init__(self, image, x, y, angle, velocity, thrust, radius):
 
         # Loads image of ship
         self.image = pygame.image.load(image)
         
         # Sets all variables from given values
-        self.pos = [position[0], position[1]]
+        self.x = x
+        self.y = y
         self.angle = angle
         self.thrust = thrust
         self.radius = radius
@@ -55,8 +56,8 @@ class Player:
 
         '''Find a new position for the player'''
 
-        acc = 0.3
-        fric = acc / 20
+        acc = 0.25
+        fric = acc / 10
         
         self.angle += self.rotate_vel
 
@@ -70,25 +71,21 @@ class Player:
         self.vel[1] *= (1 - fric)
 
         # update position
-        self.pos[0] = (self.pos[0] + self.vel[0]) % (self.settings.WIDTH - self.radius)
-        self.pos[1] = (self.pos[1] + self.vel[1]) % (self.settings.HEIGHT - self.radius)
+        self.x = (self.x + self.vel[0]) % (self.settings.WIDTH - self.radius)
+        self.y = (self.y + self.vel[1]) % (self.settings.HEIGHT - self.radius)
 
     def draw(self, screen):
         '''Draws the ship onto the screen'''
-        screen.blit(rotate_center(self.image, self.angle), (self.pos[0], self.pos[1]))
-
-    def shoot(self):
-        self.bullet = Bullet(self.vel, self.pos)
-        print("pew pew")
+        screen.blit(rotate_center(self.image, self.angle), (self.x, self.y))
 
 
 class Bullet():
-    def __init__(self, ship_angle, ship_pos):
+    def __init__(self, ship_angle, x, y):
 
-        self.bullet_speed = 5
+        self.bullet_speed = 20
 
-        self.x = ship_pos[0]
-        self.y = ship_pos[1]
+        self.x = x
+        self.y = y
 
         self.angle = ship_angle
 
@@ -96,8 +93,8 @@ class Bullet():
 
     def update(self):
 
-        self.x += 5 * math.cos(self.angle * math.pi / 180)
-        self.y += 5 * math.sin(self.angle * math.pi / 180)
+        self.x += self.bullet_speed * math.cos(self.angle * math.pi / 180)
+        self.y -= self.bullet_speed * math.sin(self.angle * math.pi / 180)
 
     def draw(self, screen):
         '''Draws the ship onto the screen'''
@@ -112,7 +109,7 @@ def gameLoop():
     screen = pygame.display.set_mode([settings.WIDTH, settings.HEIGHT])
     pygame.display.set_caption("Meteors")
     
-    player = Player('D:\Meteors\star.png', (100, 100), 0, (0, 0), False, 20)
+    player = Player('D:\Meteors\star.png', 100, 100, 0, (0, 0), False, 20)
 
     bullets = []
 
@@ -136,7 +133,7 @@ def gameLoop():
                 elif event.key == pygame.K_UP:
                     player.thrust = True
                 elif event.key == pygame.K_SPACE:
-                    bullets.append(Bullet(player.vel, player.pos))
+                    bullets.append(Bullet(player.angle, player.x, player.y))
                 
             #Reset rotation velocity / stop thrust when key goes up
             elif event.type == pygame.KEYUP:
