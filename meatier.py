@@ -1,7 +1,7 @@
 """
 Noah Parent, Mark Schneider, Gianluca Cafueri
 "Meteors"
-Creating a video game based on 'Asteroids'
+Creating a video game with inspiration from 'Asteroids'
 November 18th 2021
 """
 
@@ -12,6 +12,26 @@ WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+
+WIDTH = 900
+HEIGHT = 900
+BACKGROUND = (100, 100, 100)
+
+player_radius = 15
+
+def isColliding(center1, radius1, center2, radius2):
+    """Checks for collision between two circular objects"""
+    #Note: attempted to use sprites for collision, interfered with other functions
+
+    # Calculates distance between center of object and second object
+    dist1 = (center1[0]-center2[0])**2+(center1[1]-center2[1])**2 
+    # Calculates radius of object 1
+    dist2 = (radius1 + radius2)**2
+
+    if dist1 <= dist2:
+        return True
+    else:
+        return False 
 
 def angle_to_vector(ang):
     '''Given the angle of rotation of the ship, return the vector in the form [x, y]'''
@@ -34,16 +54,18 @@ def rotate_center(image, angle):
 
 class Player:
     '''This class represents the player'''
-    def __init__(self, image, position, angle, velocity, thrust, radius):
+    def __init__(self, image, x, y, angle, velocity, thrust, radius):
 
         # Loads image of ship
         self.image = pygame.image.load(image)
         
         # Sets all variables from given values
-        self.pos = [position[0], position[1]]
+        self.radius = radius
+        self.x = x
+        self.y = y
+        self.center = [(self.x + self.radius), (self.y + self.radius)]
         self.angle = angle
         self.thrust = thrust
-        self.radius = radius
         self.vel = [velocity[0], velocity[1]]
 
         self.settings = Settings()
@@ -52,11 +74,10 @@ class Player:
         self.rotate_vel = 0
 
     def update(self):
-
         '''Find a new position for the player'''
 
-        acc = 0.3
-        fric = acc / 20
+        acc = 0.25
+        fric = acc / 10
         
         self.angle += self.rotate_vel
 
@@ -70,49 +91,78 @@ class Player:
         self.vel[1] *= (1 - fric)
 
         # update position
-        self.pos[0] = (self.pos[0] + self.vel[0]) % (self.settings.WIDTH - self.radius)
-        self.pos[1] = (self.pos[1] + self.vel[1]) % (self.settings.HEIGHT - self.radius)
+        self.x = (self.x + self.vel[0]) % (WIDTH - self.radius)
+        self.y = (self.y + self.vel[1]) % (HEIGHT - self.radius)
+
+        self.center = [(self.x + self.radius), (self.y + self.radius)]
 
     def draw(self, screen):
         '''Draws the ship onto the screen'''
-        screen.blit(rotate_center(self.image, self.angle), (self.pos[0], self.pos[1]))
+        screen.blit(rotate_center(self.image, self.angle), (self.x, self.y))
 
-    def shoot(self):
-        self.bullet = Bullet(self.vel, self.pos)
-        print("pew pew")
+class Test():
+    def __init__(self, screen, x, y):
+        self.x = x
+        self.y = y
+        self.center = [self.x, self.y]
+        self.radius = 20
+        self.screen = screen
+    def draw(self, screen):
+        pygame.draw.circle(screen, GREEN, (self.x, self.y), self.radius)
 
+class Meteor():
+    def __init__(self, screen, x, y, size):
+        """This class represents a meteor"""
+        self.size = size
+        if self.size == "L":
+            self.image = pygame.image.load()
+        self.x = x
+        self.y = y
+        self.center = [self.x, self.y]
+        self.radius = 20
+        self.screen = screen
+    def update(self):
+        print("baka")
+    def draw(self, screen):
+        pygame.draw.circle(screen, GREEN, (self.x, self.y), self.radius)
 
 class Bullet():
-    def __init__(self, ship_angle, ship_pos):
+    '''This class represents a bullet'''
+    def __init__(self, ship_angle, x, y):
 
-        self.bullet_speed = 5
+        self.bullet_speed = 20
 
-        self.x = ship_pos[0]
-        self.y = ship_pos[1]
+        self.x = x
+        self.y = y
+
+        self.radius = 5
+        self.center = [(self.x - self.radius), (self.y + self.radius)]
 
         self.angle = ship_angle
 
         self.image = pygame.image.load('D:\Meteors\star.png')
 
     def update(self):
-
-        self.x += 5 * math.cos(self.angle * math.pi / 180)
-        self.y += 5 * math.sin(self.angle * math.pi / 180)
+        '''Finds new position for bullet'''
+        self.x += self.bullet_speed * math.cos(self.angle * math.pi / 180) 
+        self.y -= self.bullet_speed * math.sin(self.angle * math.pi / 180)
 
     def draw(self, screen):
-        '''Draws the ship onto the screen'''
+        '''Draws the bullet onto the screen'''
         screen.blit(self.image, (self.x, self.y))
 
 def gameLoop():
-
+    '''The Main Game Loop'''
     pygame.init()
 
-    settings = Settings()
+    
 
-    screen = pygame.display.set_mode([settings.WIDTH, settings.HEIGHT])
+    screen = pygame.display.set_mode([WIDTH, HEIGHT])
     pygame.display.set_caption("Meteors")
     
-    player = Player('D:\Meteors\star.png', (100, 100), 0, (0, 0), False, 20)
+    player = Player('D:\Meteors\spaceshup.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
+
+    test = Test(screen, 100, 100)
 
     bullets = []
 
@@ -129,14 +179,14 @@ def gameLoop():
 
             #Set the rotation velocity / thrust based on the key pressed
             elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    player.rotate_vel = -3
+                if event.key == pygame.K_UP:
+                    player.thrust = True
+                if event.key == pygame.K_SPACE:
+                    bullets.append(Bullet(player.angle, player.x, player.y))
                 if event.key == pygame.K_LEFT:
                     player.rotate_vel = 3
-                elif event.key == pygame.K_RIGHT:
-                    player.rotate_vel = -3
-                elif event.key == pygame.K_UP:
-                    player.thrust = True
-                elif event.key == pygame.K_SPACE:
-                    bullets.append(Bullet(player.vel, player.pos))
                 
             #Reset rotation velocity / stop thrust when key goes up
             elif event.type == pygame.KEYUP:
@@ -148,7 +198,7 @@ def gameLoop():
                     player.thrust = False
 
 
-        screen.fill(settings.BACKGROUND)
+        screen.fill(BACKGROUND)
 
         player.update()
 
@@ -157,6 +207,13 @@ def gameLoop():
             bullet.draw(screen)
 
         player.draw(screen)
+
+        test.draw(screen)
+
+        if isColliding(test.center, test.radius, player.center, player.radius) == True:
+            print("baka")
+
+        pygame.draw.line(screen, GREEN, [WIDTH / 2, 0], [WIDTH / 2, HEIGHT], 5)
 
         # FPS counter *** Note: this code must stay here, fps must be reassigned after each loop
         fps = font.render(str(int(clock.get_fps())), True, pygame.Color('white'))
