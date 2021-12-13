@@ -125,8 +125,8 @@ class Meteor():
         self.screen = screen
 
     def update(self):
-        self.x = (self.x + self.vel_x) % (WIDTH - self.radius)
-        self.y = (self.y + self.vel_y) % (HEIGHT - self.radius)
+        self.x = (self.x + self.vel_x) % (WIDTH - self.radius + 50)
+        self.y = (self.y + self.vel_y) % (HEIGHT - self.radius + 50)
 
         self.center = [self.x, self.y]
 
@@ -168,15 +168,21 @@ def gameLoop():
 
     bullets = []
     tests = []
+    meteors = []
     
     
     player = Player('D:\Meteors\spaceshup.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
 
+    """
     for i in range(2):
         test = Test(screen, 100 + 100 * i, 100)
         tests.append(test)
+    """
 
-    meteor = Meteor(screen, 400, 400, random.randint(-3, 3), random.randint(-3, 3), "L")
+    
+    for i in range(10):
+        meteor = Meteor(screen,random.randint(50, WIDTH-50), random.randint(50, WIDTH-50), random.randint(-3, 3), random.randint(-3, 3), "L")
+        meteors.append(meteor)
 
     #random.randint(-3, 3), random.randint(-3, 3)
 
@@ -214,7 +220,6 @@ def gameLoop():
         screen.fill(BACKGROUND)
 
         player.update()
-        meteor.update()
 
         for bullet in bullets:
             bullet.update()
@@ -222,10 +227,19 @@ def gameLoop():
                 if isColliding(bullet.center, bullet.radius, test.center, test.radius) == True:
                     print("hit")
                     bullets.remove(bullet)
-            bullet.draw(screen)
+            
 
+        
+        for meteor in meteors:
+            meteor.update()
+            for bullet in bullets:
+                if isColliding(bullet.center, bullet.radius, meteor.center, meteor.radius) == True:
+                    print("hit")
+                    bullets.remove(bullet)
+                    meteors.remove(meteor)
+                bullet.draw(screen)
+            meteor.draw(screen)
         player.draw(screen)
-        meteor.draw(screen)
 
         for test in tests:
             if isColliding(test.center, test.radius, player.center, player.radius) == True:
