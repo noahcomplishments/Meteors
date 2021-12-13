@@ -68,8 +68,6 @@ class Player:
         self.thrust = thrust
         self.vel = [velocity[0], velocity[1]]
 
-        self.settings = Settings()
-
         # Sets intial rotation speed to 
         self.rotate_vel = 0
 
@@ -94,6 +92,7 @@ class Player:
         self.x = (self.x + self.vel[0]) % (WIDTH - self.radius)
         self.y = (self.y + self.vel[1]) % (HEIGHT - self.radius)
 
+        # Updates center position *** Must be within update loop to track movement ***
         self.center = [(self.x + self.radius), (self.y + self.radius)]
 
     def draw(self, screen):
@@ -107,22 +106,30 @@ class Test():
         self.center = [self.x, self.y]
         self.radius = 20
         self.screen = screen
+
     def draw(self, screen):
         pygame.draw.circle(screen, GREEN, (self.x, self.y), self.radius)
 
 class Meteor():
-    def __init__(self, screen, x, y, size):
+    def __init__(self, screen, x, y, vel_x, vel_y, size):
         """This class represents a meteor"""
         self.size = size
         if self.size == "L":
-            self.image = pygame.image.load()
+            baka = 21
         self.x = x
         self.y = y
+        self.vel_x = vel_x
+        self.vel_y = vel_y
         self.center = [self.x, self.y]
         self.radius = 20
         self.screen = screen
+
     def update(self):
-        print("baka")
+        self.x = (self.x + self.vel_x) % (WIDTH - self.radius)
+        self.y = (self.y + self.vel_y) % (HEIGHT - self.radius)
+
+        self.center = [self.x, self.y]
+
     def draw(self, screen):
         pygame.draw.circle(screen, GREEN, (self.x, self.y), self.radius)
 
@@ -135,9 +142,8 @@ class Bullet():
         self.x = x
         self.y = y
 
-        self.radius = 5
-        self.center = [(self.x - self.radius), (self.y + self.radius)]
-
+        self.radius = 15
+        
         self.angle = ship_angle
 
         self.image = pygame.image.load('D:\Meteors\star.png')
@@ -147,6 +153,8 @@ class Bullet():
         self.x += self.bullet_speed * math.cos(self.angle * math.pi / 180) 
         self.y -= self.bullet_speed * math.sin(self.angle * math.pi / 180)
 
+        self.center = [(self.x + self.radius), (self.y + self.radius)]
+
     def draw(self, screen):
         '''Draws the bullet onto the screen'''
         screen.blit(self.image, (self.x, self.y))
@@ -155,16 +163,22 @@ def gameLoop():
     '''The Main Game Loop'''
     pygame.init()
 
-    
-
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
     pygame.display.set_caption("Meteors")
+
+    bullets = []
+    tests = []
+    
     
     player = Player('D:\Meteors\spaceshup.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
 
-    test = Test(screen, 100, 100)
+    for i in range(2):
+        test = Test(screen, 100 + 100 * i, 100)
+        tests.append(test)
 
-    bullets = []
+    meteor = Meteor(screen, 400, 400, random.randint(-3, 3), random.randint(-3, 3), "L")
+
+    #random.randint(-3, 3), random.randint(-3, 3)
 
     clock = pygame.time.Clock()
 
@@ -201,17 +215,26 @@ def gameLoop():
         screen.fill(BACKGROUND)
 
         player.update()
+        meteor.update()
 
         for bullet in bullets:
             bullet.update()
+            for test in tests:
+                if isColliding(bullet.center, bullet.radius, test.center, test.radius) == True:
+                    print("hit")
+                    bullets.remove(bullet)
             bullet.draw(screen)
 
         player.draw(screen)
+        meteor.draw(screen)
 
-        test.draw(screen)
-
-        if isColliding(test.center, test.radius, player.center, player.radius) == True:
-            print("baka")
+        for test in tests:
+            if isColliding(test.center, test.radius, player.center, player.radius) == True:
+                print("baka")
+                pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
+            test.draw(screen)
+        
+            
 
         pygame.draw.line(screen, GREEN, [WIDTH / 2, 0], [WIDTH / 2, HEIGHT], 5)
 
@@ -222,13 +245,6 @@ def gameLoop():
         pygame.display.flip()
 
         clock.tick(60)
-        
-
-class Settings:
-    def __init__(self):
-        self.WIDTH = 900
-        self.HEIGHT = 900
-        self.BACKGROUND = (100, 100, 100)
 
 if __name__ == '__main__':
     gameLoop()
