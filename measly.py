@@ -16,8 +16,18 @@ BLUE = (0, 0, 255)
 WIDTH = 900
 HEIGHT = 900
 BACKGROUND = (100, 100, 100)
+ROTATE_SPEED = 4
 
 player_radius = 15
+
+def getMeteorSpeed():
+
+    move = random.randint(1,2)
+
+    if move == 1:
+        return random.randint(1, 3)
+    if move == 2:
+        return random.randint(-3, -1)
 
 def isColliding(center1, radius1, center2, radius2):
     """Checks for collision between two circular objects"""
@@ -125,8 +135,8 @@ class Meteor():
         self.screen = screen
 
     def update(self):
-        self.x = (self.x + self.vel_x) % (WIDTH - self.radius)
-        self.y = (self.y + self.vel_y) % (HEIGHT - self.radius)
+        self.x = (self.x + self.vel_x) % (WIDTH - self.radius + 50)
+        self.y = (self.y + self.vel_y) % (HEIGHT - self.radius + 50)
 
         self.center = [self.x, self.y]
 
@@ -168,15 +178,21 @@ def gameLoop():
 
     bullets = []
     tests = []
+    meteors = []
     
     
     player = Player('D:\Meteors\spaceshup.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
 
+    """
     for i in range(2):
         test = Test(screen, 100 + 100 * i, 100)
         tests.append(test)
+    """
 
-    meteor = Meteor(screen, 400, 400, random.randint(-3, 3), random.randint(-3, 3), "L")
+    
+    for i in range(10):
+        meteor = Meteor(screen,random.randint(50, WIDTH-50), random.randint(50, WIDTH-50), getMeteorSpeed(), getMeteorSpeed(), "L")
+        meteors.append(meteor)
 
     #random.randint(-3, 3), random.randint(-3, 3)
 
@@ -194,13 +210,13 @@ def gameLoop():
             #Set the rotation velocity / thrust based on the key pressed
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
-                    player.rotate_vel = -3
+                    player.rotate_vel = -ROTATE_SPEED
                 if event.key == pygame.K_UP:
                     player.thrust = True
                 if event.key == pygame.K_SPACE:
                     bullets.append(Bullet(player.angle, player.x, player.y))
                 if event.key == pygame.K_LEFT:
-                    player.rotate_vel = 3
+                    player.rotate_vel = ROTATE_SPEED
                 
             #Reset rotation velocity / stop thrust when key goes up
             elif event.type == pygame.KEYUP:
@@ -214,7 +230,6 @@ def gameLoop():
         screen.fill(BACKGROUND)
 
         player.update()
-        meteor.update()
 
         for bullet in bullets:
             bullet.update()
@@ -223,17 +238,31 @@ def gameLoop():
                     print("hit")
                     bullets.remove(bullet)
             bullet.draw(screen)
-
+        
+        for meteor in meteors:
+            meteor.update()
+            for bullet in bullets:
+                if isColliding(bullet.center, bullet.radius, meteor.center, meteor.radius) == True:
+                    print("hit")
+                    bullets.remove(bullet)
+                    meteors.remove(meteor)
+                bullet.draw(screen)
+            meteor.draw(screen)
         player.draw(screen)
-        meteor.draw(screen)
+
+        for meteor in meteors:
+            if isColliding(player.center, player.radius, meteor.center, meteor.radius) == True:
+                meteors.remove(meteor)
+                pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
+            meteor.draw(screen)
+        player.draw(screen)
+
 
         for test in tests:
             if isColliding(test.center, test.radius, player.center, player.radius) == True:
                 print("baka")
                 pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
             test.draw(screen)
-
-        pygame.draw.line(screen, GREEN, [WIDTH / 2, 0], [WIDTH / 2, HEIGHT], 5)
 
         # FPS counter *** Note: this code must stay here, fps must be reassigned after each loop
         fps = font.render(str(int(clock.get_fps())), True, pygame.Color('white'))
