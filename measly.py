@@ -23,15 +23,12 @@ ROTATE_SPEED = 4
 player_radius = 17
 
 def getMeteorSpeed():
-
     move = random.randint(1,2)
 
     if move == 1:
         return random.randint(1, 3)
     if move == 2:
         return random.randint(-3, -1)
-    
-
 
 def isColliding(center1, radius1, center2, radius2):
     """Checks for collision between two circular objects"""
@@ -206,6 +203,7 @@ def gameLoop():
     clock = pygame.time.Clock()
 
     font = pygame.font.Font(None, 50)
+    glow = pygame.image.load("D:\Meteors\glow2.png")
 
     done = False
 
@@ -244,6 +242,9 @@ def gameLoop():
 
         immunetime += 1
 
+        if immunetime / 60 < 5:
+            screen.blit(glow, (player.x - 20, player.y - 20))
+
         for bullet in bullets:
             bullet.update()
             for test in tests:
@@ -274,6 +275,8 @@ def gameLoop():
                     player.lives -= 1
                     player.x = WIDTH / 2
                     player.y = HEIGHT / 2
+
+                    player.vel = [0, 0]
                     immunetime = 0
                     if player.lives == 0:
                         print("Game Over!")
