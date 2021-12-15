@@ -7,6 +7,8 @@ November 18th 2021
 
 import pygame, math, random, sys, os
 
+from pygame.event import get
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
@@ -15,10 +17,10 @@ BLUE = (0, 0, 255)
 
 WIDTH = 900
 HEIGHT = 900
-BACKGROUND = (100, 100, 100)
+BACKGROUND = (0, 0, 0)
 ROTATE_SPEED = 4
 
-player_radius = 15
+player_radius = 17
 
 def getMeteorSpeed():
 
@@ -28,6 +30,8 @@ def getMeteorSpeed():
         return random.randint(1, 3)
     if move == 2:
         return random.randint(-3, -1)
+    
+
 
 def isColliding(center1, radius1, center2, radius2):
     """Checks for collision between two circular objects"""
@@ -77,6 +81,8 @@ class Player:
         self.angle = angle
         self.thrust = thrust
         self.vel = [velocity[0], velocity[1]]
+        
+        self.lives = 3
 
         # Sets intial rotation speed to 
         self.rotate_vel = 0
@@ -125,18 +131,19 @@ class Meteor():
         """This class represents a meteor"""
         self.size = size
         if self.size == "L":
-            baka = 21
+            self.radius = 20
+        if self.size == "M":
+            self.radius = 10
         self.x = x
         self.y = y
         self.vel_x = vel_x
         self.vel_y = vel_y
         self.center = [self.x, self.y]
-        self.radius = 20
         self.screen = screen
 
     def update(self):
-        self.x = (self.x + self.vel_x) % (WIDTH - self.radius + 50)
-        self.y = (self.y + self.vel_y) % (HEIGHT - self.radius + 50)
+        self.x = ((self.x + self.vel_x) % (WIDTH + 40))
+        self.y = ((self.y + self.vel_y) % (HEIGHT + 40))
 
         self.center = [self.x, self.y]
 
@@ -152,11 +159,11 @@ class Bullet():
         self.x = x
         self.y = y
 
-        self.radius = 15
+        self.radius = 13
         
         self.angle = ship_angle
 
-        self.image = pygame.image.load('D:\Meteors\star.png')
+        self.image = pygame.image.load('D:\Meteors\shot4.png')
 
     def update(self):
         '''Finds new position for bullet'''
@@ -169,6 +176,7 @@ class Bullet():
         '''Draws the bullet onto the screen'''
         screen.blit(self.image, (self.x, self.y))
 
+
 def gameLoop():
     '''The Main Game Loop'''
     pygame.init()
@@ -180,8 +188,7 @@ def gameLoop():
     tests = []
     meteors = []
     
-    
-    player = Player('D:\Meteors\spaceshup.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
+    player = Player('D:\Meteors\ship3.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
 
     """
     for i in range(2):
@@ -189,9 +196,9 @@ def gameLoop():
         tests.append(test)
     """
 
-    
     for i in range(10):
-        meteor = Meteor(screen,random.randint(50, WIDTH-50), random.randint(50, WIDTH-50), getMeteorSpeed(), getMeteorSpeed(), "L")
+        
+        meteor = Meteor(screen, random.randint(40, WIDTH - 40), random.randint(40, WIDTH - 40), getMeteorSpeed(), getMeteorSpeed(), "L")
         meteors.append(meteor)
 
     #random.randint(-3, 3), random.randint(-3, 3)
@@ -201,6 +208,10 @@ def gameLoop():
     font = pygame.font.Font(None, 50)
 
     done = False
+
+    frame_count = 0
+    frame_rate = 60
+    immunetime = 0
 
     while not done:
         for event in pygame.event.get(): 
@@ -231,6 +242,8 @@ def gameLoop():
 
         player.update()
 
+        immunetime += 1
+
         for bullet in bullets:
             bullet.update()
             for test in tests:
@@ -245,6 +258,10 @@ def gameLoop():
                 if isColliding(bullet.center, bullet.radius, meteor.center, meteor.radius) == True:
                     print("hit")
                     bullets.remove(bullet)
+                    if meteor.size == "L":
+                        for i in range(2):
+                            newmeteors = Meteor(screen, meteor.center[0], meteor.center[1], getMeteorSpeed(), getMeteorSpeed(), "M")
+                            meteors.append(newmeteors)
                     meteors.remove(meteor)
                 bullet.draw(screen)
             meteor.draw(screen)
@@ -252,11 +269,18 @@ def gameLoop():
 
         for meteor in meteors:
             if isColliding(player.center, player.radius, meteor.center, meteor.radius) == True:
-                meteors.remove(meteor)
-                pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
+                if immunetime / 60 > 5:
+                    pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
+                    player.lives -= 1
+                    player.x = WIDTH / 2
+                    player.y = HEIGHT / 2
+                    immunetime = 0
+                    if player.lives == 0:
+                        print("Game Over!")
+                        done = True
+                    
             meteor.draw(screen)
         player.draw(screen)
-
 
         for test in tests:
             if isColliding(test.center, test.radius, player.center, player.radius) == True:
@@ -264,9 +288,36 @@ def gameLoop():
                 pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
             test.draw(screen)
 
+        if len(meteors) == 0:
+            for i in range(10):
+                immunetime = 0
+                meteor = Meteor(screen,random.randint(50, WIDTH-50), random.randint(50, WIDTH-50), getMeteorSpeed(), getMeteorSpeed(), "L")
+                meteors.append(meteor)
+
         # FPS counter *** Note: this code must stay here, fps must be reassigned after each loop
         fps = font.render(str(int(clock.get_fps())), True, pygame.Color('white'))
         screen.blit(fps, (20, 20))
+
+        # --- Timer going up ---
+    
+        # Calculate total seconds
+        total_seconds = frame_count // frame_rate
+    
+        # Divide by 60 to get total minutes
+        minutes = total_seconds // 60
+    
+        # Use modulus (remainder) to get seconds
+        seconds = total_seconds % 60
+    
+        # Use python string formatting to format in leading zeros
+        output_string = "Time: {0:02}:{1:02}".format(minutes, seconds)
+    
+        # Blit to the screen
+        text = font.render(output_string, True, WHITE)
+        screen.blit(text, [WIDTH - 200, 20])
+
+        # Add to frame count every loop for timer
+        frame_count += 1
 
         pygame.display.flip()
 
