@@ -15,7 +15,7 @@ BLUE = (0, 0, 255)
 
 WIDTH = 900
 HEIGHT = 900
-BACKGROUND = (100, 100, 100)
+BACKGROUND = (0, 0, 0)
 ROTATE_SPEED = 4
 
 player_radius = 15
@@ -125,18 +125,19 @@ class Meteor():
         """This class represents a meteor"""
         self.size = size
         if self.size == "L":
-            baka = 21
+            self.radius = 20
+        if self.size == "M":
+            self.radius = 10
         self.x = x
         self.y = y
         self.vel_x = vel_x
         self.vel_y = vel_y
         self.center = [self.x, self.y]
-        self.radius = 20
         self.screen = screen
 
     def update(self):
-        self.x = (self.x + self.vel_x) % (WIDTH - self.radius + 50)
-        self.y = (self.y + self.vel_y) % (HEIGHT - self.radius + 50)
+        self.x = ((self.x + self.vel_x) % (WIDTH + 40))
+        self.y = ((self.y + self.vel_y) % (HEIGHT + 40))
 
         self.center = [self.x, self.y]
 
@@ -152,11 +153,11 @@ class Bullet():
         self.x = x
         self.y = y
 
-        self.radius = 15
+        self.radius = 13
         
         self.angle = ship_angle
 
-        self.image = pygame.image.load('D:\Meteors\star.png')
+        self.image = pygame.image.load('D:\Meteors\shot4.png')
 
     def update(self):
         '''Finds new position for bullet'''
@@ -181,7 +182,7 @@ def gameLoop():
     meteors = []
     
     
-    player = Player('D:\Meteors\spaceshup.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
+    player = Player('D:\Meteors\ship3.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
 
     """
     for i in range(2):
@@ -245,6 +246,11 @@ def gameLoop():
                 if isColliding(bullet.center, bullet.radius, meteor.center, meteor.radius) == True:
                     print("hit")
                     bullets.remove(bullet)
+                    if meteor.size == "L":
+                        for i in range(2):
+                            newmeteors = Meteor(screen, meteor.center[0], meteor.center[1], getMeteorSpeed(), getMeteorSpeed(), "M")
+                            meteors.append(newmeteors)
+
                     meteors.remove(meteor)
                 bullet.draw(screen)
             meteor.draw(screen)
@@ -252,8 +258,9 @@ def gameLoop():
 
         for meteor in meteors:
             if isColliding(player.center, player.radius, meteor.center, meteor.radius) == True:
-                meteors.remove(meteor)
                 pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
+                print("Game Over!")
+                done = True
             meteor.draw(screen)
         player.draw(screen)
 
@@ -263,6 +270,11 @@ def gameLoop():
                 print("baka")
                 pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
             test.draw(screen)
+
+        if len(meteors) == 0:
+            for i in range(10):
+                meteor = Meteor(screen,random.randint(50, WIDTH-50), random.randint(50, WIDTH-50), getMeteorSpeed(), getMeteorSpeed(), "L")
+                meteors.append(meteor)
 
         # FPS counter *** Note: this code must stay here, fps must be reassigned after each loop
         fps = font.render(str(int(clock.get_fps())), True, pygame.Color('white'))
