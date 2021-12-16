@@ -7,8 +7,6 @@ November 18th 2021
 
 import pygame, math, random, sys, os
 
-from pygame.event import get
-
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
@@ -20,9 +18,10 @@ HEIGHT = 900
 BACKGROUND = (0, 0, 0)
 ROTATE_SPEED = 4
 
-player_radius = 17
+player_radius = 15
 
 def getMeteorSpeed():
+
     move = random.randint(1,2)
 
     if move == 1:
@@ -69,6 +68,8 @@ class Player:
 
         # Loads image of ship
         self.image = pygame.image.load(image)
+
+        self.heartImage = pygame.image.load('heart.png')
         
         # Sets all variables from given values
         self.radius = radius
@@ -78,7 +79,7 @@ class Player:
         self.angle = angle
         self.thrust = thrust
         self.vel = [velocity[0], velocity[1]]
-        
+
         self.lives = 3
 
         # Sets intial rotation speed to 
@@ -112,16 +113,15 @@ class Player:
         '''Draws the ship onto the screen'''
         screen.blit(rotate_center(self.image, self.angle), (self.x, self.y))
 
-class Test():
-    def __init__(self, screen, x, y):
-        self.x = x
-        self.y = y
-        self.center = [self.x, self.y]
-        self.radius = 20
-        self.screen = screen
-
-    def draw(self, screen):
-        pygame.draw.circle(screen, GREEN, (self.x, self.y), self.radius)
+    def drawHealth(self, screen):
+        if self.lives == 1:
+            screen.blit(self.heartImage, (40, 820))
+        elif self.lives == 2:
+            for i in range (0, 81, 80):
+                screen.blit(self.heartImage, (40 + i, 820))
+        elif self.lives == 3:
+            for i in range (0, 161, 80):
+                screen.blit(self.heartImage, (40 + i, 820))
 
 class Meteor():
     def __init__(self, screen, x, y, vel_x, vel_y, size):
@@ -138,6 +138,11 @@ class Meteor():
         self.center = [self.x, self.y]
         self.screen = screen
 
+        if self.size == "L":
+            self.image = pygame.image.load('largeasteroid.png')
+        elif self.size == "M":
+            self.image = pygame.image.load('mediumasteroid.png')
+
     def update(self):
         self.x = ((self.x + self.vel_x) % (WIDTH + 40))
         self.y = ((self.y + self.vel_y) % (HEIGHT + 40))
@@ -145,7 +150,7 @@ class Meteor():
         self.center = [self.x, self.y]
 
     def draw(self, screen):
-        pygame.draw.circle(screen, GREEN, (self.x, self.y), self.radius)
+        screen.blit(self.image, (self.x, self.y))
 
 class Bullet():
     '''This class represents a bullet'''
@@ -160,7 +165,7 @@ class Bullet():
         
         self.angle = ship_angle
 
-        self.image = pygame.image.load('D:\Meteors\shot4.png')
+        self.image = pygame.image.load('shot4.png')
 
     def update(self):
         '''Finds new position for bullet'''
@@ -173,7 +178,17 @@ class Bullet():
         '''Draws the bullet onto the screen'''
         screen.blit(self.image, (self.x, self.y))
 
+# Initialize pygame mixer the load and play background music
+pygame.mixer.init()
+pygame.mixer.music.load("backgroundmusic.ogg")
+pygame.mixer.music.play(loops = -1)
+        
+#Set position of graphic
+backgroundPosition = [0, 0]
 
+# Load and set up graphic
+backgroundImage = pygame.image.load("background1.jpg")
+    
 def gameLoop():
     '''The Main Game Loop'''
     pygame.init()
@@ -185,17 +200,11 @@ def gameLoop():
     tests = []
     meteors = []
     
-    player = Player('D:\Meteors\ship3.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
-
-    """
-    for i in range(2):
-        test = Test(screen, 100 + 100 * i, 100)
-        tests.append(test)
-    """
+    
+    player = Player('ship3.png', WIDTH / 2, HEIGHT / 2, 0, (0, 0), False, player_radius)
 
     for i in range(10):
-        
-        meteor = Meteor(screen, random.randint(40, WIDTH - 40), random.randint(40, WIDTH - 40), getMeteorSpeed(), getMeteorSpeed(), "L")
+        meteor = Meteor(screen,random.randint(50, WIDTH-50), random.randint(50, WIDTH-50), getMeteorSpeed(), getMeteorSpeed(), "L")
         meteors.append(meteor)
 
     #random.randint(-3, 3), random.randint(-3, 3)
@@ -203,7 +212,7 @@ def gameLoop():
     clock = pygame.time.Clock()
 
     font = pygame.font.Font(None, 50)
-    glow = pygame.image.load("D:\Meteors\glow2.png")
+    glow = pygame.image.load("glow2.png")
 
     done = False
 
@@ -213,7 +222,7 @@ def gameLoop():
 
     while not done:
         for event in pygame.event.get(): 
-            if event.type == pygame.QUIT: 
+            if event.type == pygame.QUIT:
                 sys.exit()
 
             #Set the rotation velocity / thrust based on the key pressed
@@ -238,7 +247,13 @@ def gameLoop():
 
         screen.fill(BACKGROUND)
 
+        # Copy image to screen:
+    
+        screen.blit(backgroundImage, backgroundPosition)
+
         player.update()
+
+        player.drawHealth(screen)
 
         immunetime += 1
 
@@ -263,6 +278,7 @@ def gameLoop():
                         for i in range(2):
                             newmeteors = Meteor(screen, meteor.center[0], meteor.center[1], getMeteorSpeed(), getMeteorSpeed(), "M")
                             meteors.append(newmeteors)
+
                     meteors.remove(meteor)
                 bullet.draw(screen)
             meteor.draw(screen)
@@ -271,11 +287,15 @@ def gameLoop():
         for meteor in meteors:
             if isColliding(player.center, player.radius, meteor.center, meteor.radius) == True:
                 if immunetime / 60 > 5:
+                    if meteor.size == "L":
+                        for i in range(2):
+                            newmeteors = Meteor(screen,meteor.center[0], meteor.center[1], getMeteorSpeed(), getMeteorSpeed(), "M")
+                            meteors.append(newmeteors)
+                    meteors.remove(meteor)
                     pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
                     player.lives -= 1
                     player.x = WIDTH / 2
                     player.y = HEIGHT / 2
-
                     player.vel = [0, 0]
                     immunetime = 0
                     if player.lives == 0:
@@ -284,13 +304,6 @@ def gameLoop():
                     
             meteor.draw(screen)
         player.draw(screen)
-
-        for test in tests:
-            if isColliding(test.center, test.radius, player.center, player.radius) == True:
-                print("baka")
-                pygame.draw.circle(screen, RED, (HEIGHT-50, WIDTH-50), 30)
-            test.draw(screen)
-
         if len(meteors) == 0:
             for i in range(10):
                 immunetime = 0
